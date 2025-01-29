@@ -37,6 +37,9 @@ log_metadata <- read_xlsx("NUmpTemperature2024.xlsx") %>%
 logger_loc <- log_metadata %>% 
   select(logger_id, lat, long)
 
+logger_site <- log_metadata %>% 
+  select(logger_id, site)
+
 mat = matrix(ncol = 0, nrow = 0) 
 daily_air_master = data.frame(mat)
 daily_water_master = data.frame(mat)
@@ -68,9 +71,10 @@ daily_temp_stats <- temp %>%
 # daily_air_master <- rbind(daily_air_master, daily_temp_stats)
 daily_water_master <- rbind(daily_water_master, daily_temp_stats)
 
-# write_xlsx(daily_air_master, "2024 Logger Sites/Air/daily_air_master.xlsx")
+  write_xlsx(daily_air_master, "2024 Logger Sites/Air/daily_air_master.xlsx")
   write_xlsx(daily_water_master, "2024 Logger Sites/Water/daily_water_master.xlsx")
 ```
+
 
 ```{r}
 # Review prelim daily air temp plots
@@ -80,5 +84,37 @@ a + facet_wrap(~logger_id)
 # Review prelim daily water temp plots
 w <- ggplot(data = daily_water_master, aes(x = as.Date(longdate), y = mean_temp)) + geom_line()
 w + facet_wrap(~logger_id)
+```
+
+
+```{r}
+daily_air_master <- merge(daily_air_master, logger_site, by="logger_id") 
+daily_water_master <- merge(daily_water_master, logger_site, by="logger_id") 
+```
+
+
+```{r}
+temp <- read_xlsx("USGS Sites/USGS Site 14317450 (Idleyld Park).xlsx") %>% 
+ clean_names() %>% 
+ mutate(type = "Water") %>% 
+rename("longdate" = "datetime",
+       "mean_temp" = "mean_c",
+       "min_temp" = "min_c",
+       "max_temp" = "max_c") %>% 
+separate('longdate',
+                  into = c('year', 'month', 'day'),
+                  sep= '-',
+                  remove = FALSE) 
+
+temp <- merge(temp, logger_site, by="logger_id")
+
+daily_water_master <- rbind(temp, daily_water_master)
+```
+
+```{r}
+MDMS <- daily_water_master %>% 
+  filter(longdate > "2024-06-19" & longdate <= "2024-09-15") %>% 
+  group_by(logger_id, site) %>% 
+  summarize(mdms = max(max_temp))
 ```
 
