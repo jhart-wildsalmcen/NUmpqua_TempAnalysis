@@ -1,0 +1,30 @@
+---
+title: "Daily Temp Stats"
+author: "J.Hart"
+date: "2025-01-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+For each stream temperature site (including USGS sites and our temperature logger sites), please summarize:
+1) maximum daily maximum stream temperature (ie, just the warmest temperature recorded at each site).
+2) the number of days where daily maximums exceeded 20 C.
+3) linear regressions of daily maximum stream temperatures on daily maximum air temperatures for the June 1 -  Aug 30 period. Use the air temperature data from the NorthUmpAtSteamboat site  (logger # 21679162). We will want to take the slope coefficients and R squared values from each regression. 
+
+I think we should summarize all this in a table in the manuscript, so providing the info in excel table form is the easiest for me to deal with. I also think it would be good to output plots for all of the air stream temperature regressions to visually check for fit and outliers, etc.. Right now I would envision this as supplementary material, but not necessarily in the main manuscript.
+
+
+```{r}
+# Load packages
+
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(writexl)
+
+```
+
