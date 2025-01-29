@@ -34,12 +34,17 @@ library(writexl)
 log_metadata <- read_xlsx("NUmpTemperature2024.xlsx") %>% 
  clean_names()
 
-daily_air_master <- daily_temp_stats
+logger_loc <- log_metadata %>% 
+  select(logger_id, lat, long)
 
-temp <- read_xlsx("2024 Logger Sites/Air/21679162.xlsx") %>% 
+mat = matrix(ncol = 0, nrow = 0) 
+daily_air_master = data.frame(mat)
+daily_water_master = data.frame(mat)
+
+temp <- read_xlsx("2024 Logger Sites/Water/21679182.xlsx") %>% 
  clean_names() %>% 
- mutate(logger_id = "21679162",
-        type = "Air") %>% 
+ mutate(logger_id = "21679182",
+        type = "Water") %>% 
  select(-number) %>% 
  rename("date"= "date_time_pdt",
         "temp_c"= "temperature_c") %>% 
@@ -50,17 +55,21 @@ temp <- read_xlsx("2024 Logger Sites/Air/21679162.xlsx") %>%
                   into = c('year', 'month', 'day'),
                   sep= '-',
                   remove = FALSE) 
- 
-  daily_temp_stats <- temp %>%
-  group_by(logger_id, type, year, month, day, longdate) %>%
+
+temp <- merge(temp, logger_loc, by="logger_id") 
+
+daily_temp_stats <- temp %>%
+  group_by(logger_id, type, year, month, day, longdate, lat, long) %>%
   summarise(mean_temp = round(mean(temp_c), digits=2),
             min_temp = round(min(temp_c), digits=2),
             max_temp = round(max(temp_c), digits=2))
   
   
-daily_air_master <- rbind(daily_air_master, daily_temp_stats)
- 
-write_xlsx(daily_air_master, "2024 Logger Sites/Air/daily_air_master.xlsx")
+# daily_air_master <- rbind(daily_air_master, daily_temp_stats)
+daily_water_master <- rbind(daily_water_master, daily_temp_stats)
+
+# write_xlsx(daily_air_master, "2024 Logger Sites/Air/daily_air_master.xlsx")
+  write_xlsx(daily_water_master, "2024 Logger Sites/Water/daily_water_master.xlsx")
 ```
 
 ```{r}
