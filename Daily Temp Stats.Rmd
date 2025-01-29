@@ -28,3 +28,26 @@ library(writexl)
 
 ```
 
+```{r}
+temp <- read_xlsx(f) %>% 
+ clean_names() %>% 
+ select(-number) %>% 
+ rename("date"= "date_time_pdt",
+        "temp_c"= "temperature_c") %>% 
+ separate('date',
+          into = c('longdate', 'time'),
+          sep= ' ') %>% 
+ separate('longdate',
+                  into = c('year', 'month', 'day'),
+                  sep= '-',
+                  remove = FALSE) 
+ 
+  daily_temp_stats <- temp %>%
+  group_by(year, month, day, longdate) %>%
+  summarise(mean_temp = round(mean(temp_c), digits=2),
+            min_temp = round(min(temp_c), digits=2),
+            max_temp = round(max(temp_c), digits=2))
+ 
+write_xlsx(daily_temp_stats, gsub('.xlsx', '_processed.xlsx', f))
+```
+
