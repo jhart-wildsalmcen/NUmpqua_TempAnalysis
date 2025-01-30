@@ -1,5 +1,5 @@
 ---
-title: "Daily Temp Stats"
+title: "N. Umpqua 2024 Daily Temp Stats & Air/Water Regressions"
 author: "J.Hart"
 date: "2025-01-29"
 output: html_document
@@ -31,18 +31,27 @@ library(writexl)
 
 ```{r}
 # Read in logger metadata
+
 log_metadata <- read_xlsx("NUmpTemperature2024.xlsx") %>% 
  clean_names()
+
+# Create data frame for logger lat/long
 
 logger_loc <- log_metadata %>% 
   select(logger_id, lat, long)
 
+# Create date frame for logger site location descriptions
+
 logger_site <- log_metadata %>% 
   select(logger_id, site)
+
+# Create empty data frame for combined air/water daily stats
 
 mat = matrix(ncol = 0, nrow = 0) 
 daily_air_master = data.frame(mat)
 daily_water_master = data.frame(mat)
+
+# Read in each logger table & merge metadata info
 
 temp <- read_xlsx("2024 Logger Sites/Water/21679182.xlsx") %>% 
  clean_names() %>% 
@@ -61,39 +70,26 @@ temp <- read_xlsx("2024 Logger Sites/Water/21679182.xlsx") %>%
 
 temp <- merge(temp, logger_loc, by="logger_id") 
 
+# Calcuate daily temp statistics 
+
 daily_temp_stats <- temp %>%
   group_by(logger_id, type, year, month, day, longdate, lat, long) %>%
   summarise(mean_temp = round(mean(temp_c), digits=2),
             min_temp = round(min(temp_c), digits=2),
             max_temp = round(max(temp_c), digits=2))
   
+# Merge individual tables to master table after each run
   
-# daily_air_master <- rbind(daily_air_master, daily_temp_stats)
+daily_air_master <- rbind(daily_air_master, daily_temp_stats)
 daily_water_master <- rbind(daily_water_master, daily_temp_stats)
 
-  write_xlsx(daily_air_master, "2024 Logger Sites/Air/daily_air_master.xlsx")
-  write_xlsx(daily_water_master, "2024 Logger Sites/Water/daily_water_master.xlsx")
-```
-
-
-```{r}
-# Review prelim daily air temp plots
-a <- ggplot(data = daily_air_master, aes(x = as.Date(longdate), y = mean_temp)) + geom_line()
-a + facet_wrap(~logger_id)
-
-# Review prelim daily water temp plots
-w <- ggplot(data = daily_water_master, aes(x = as.Date(longdate), y = mean_temp)) + geom_line()
-w + facet_wrap(~logger_id)
-```
-
-
-```{r}
-daily_air_master <- merge(daily_air_master, logger_site, by="logger_id") 
-daily_water_master <- merge(daily_water_master, logger_site, by="logger_id") 
 ```
 
 
 ```{r USGS Station Stats}
+
+# Process USGS Gauge site tables individually & merge to master
+
 temp <- read_xlsx("USGS Sites/USGS Site 14317450 (Idleyld Park).xlsx") %>% 
  clean_names() %>% 
  mutate(type = "Water") %>% 
@@ -111,12 +107,42 @@ temp <- merge(temp, logger_site, by="logger_id")
 daily_water_master <- rbind(temp, daily_water_master)
 ```
 
+
+```{r}
+# Merge location descriptions to master
+
+daily_air_master <- merge(daily_air_master, logger_site, by="logger_id") 
+daily_water_master <- merge(daily_water_master, logger_site, by="logger_id") 
+
+# Write daily temp stats master to table
+
+write_xlsx(daily_air_master, "2024 Logger Sites/Air/daily_air_master.xlsx")
+write_xlsx(daily_water_master, "2024 Logger Sites/Water/daily_water_master.xlsx")
+```
+
+
+```{r}
+# Review prelim daily air temp plots
+a <- ggplot(data = daily_air_master, aes(x = as.Date(longdate), y = mean_temp)) + geom_line()
+a + facet_wrap(~logger_id)
+
+# Review prelim daily water temp plots
+w <- ggplot(data = daily_water_master, aes(x = as.Date(longdate), y = mean_temp)) + geom_line()
+w + facet_wrap(~logger_id)
+```
+
+
+
 ```{r MDMS & Days Above 20C}
 
-MDMS <- daily_water_master %>% 
+# Maximum daily maximum temperature
+
+MDMT <- daily_water_master %>% 
   filter(longdate > "2024-06-19" & longdate <= "2024-09-15") %>% 
   group_by(logger_id, site) %>% 
   summarize(mdms = max(max_temp))
+
+# Days maximum temperature above 20C
 
 DaysAbove20 <- daily_water_master %>% 
   filter(longdate > "2024-06-19" & longdate <= "2024-09-15") %>% 
@@ -126,8 +152,10 @@ DaysAbove20 <- daily_water_master %>%
   
 ```
 
+## Max temp air/water correlations
 
 ```{r}
+# Prepare air logger data for regression
 
 air <- daily_air_master %>% 
   filter(logger_id == "21679162") %>% 
@@ -135,12 +163,73 @@ air <- daily_air_master %>%
   filter(longdate > '2024-06-19' & longdate <= '2024-09-15') %>% 
   mutate(air_max = max_temp)
 
+# Prepare individual water logger data for regression
+
 water <- daily_water_master %>% 
   filter(logger_id == '21433141') %>% 
   mutate(longdate = make_date(year,month,day)) %>%
   filter(longdate > '2024-06-19' & longdate <= '2024-09-15') %>% 
   mutate(water_max = max_temp) 
 
+# Join table for linear regression
+airwater_join <- water %>% 
+  left_join(air, by = "longdate")
+```
+
+
+```{r}
+# Create equation formula for regression equation
+
+lm_eqn <- function(df){
+    m <- lm(water_max ~ air_max, df);
+    eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
+         list(a = format(unname(coef(m)[1]), digits = 3),
+              b = format(unname(coef(m)[2]), digits = 3),
+             r2 = format(summary(m)$adj.r.squared, digits = 3)))
+    as.character(as.expression(eq));
+}                 
+
+
+# Calculate Pearson correlation coefficient
+correlation <- cor(airwater_join$water_max, airwater_join$air_max, method = 'pearson')
+
+# Plot linear regression
+
+a <- ggplot(airwater_join, aes(x=air_max, y = water_max)) +
+  geom_point(color='blue') +
+  geom_smooth(method = "lm", se = TRUE, colour = 'black') +
+  theme_light() + 
+ labs(title="N.Umpqua Air & Water Correlation",
+       subtitle = "6/20/2024 – 9/15/2024",
+       x="Air temperature (°C)",
+       y="Water temperature (°C)") +
+  geom_text(x = 15, y = 16, label = lm_eqn(airwater_join), parse = TRUE) +
+  geom_text(x = 15, y = 15, label = "Pearson r = 0.86")
+
+a
+
+```
+
+## Mean temp air/water correlations
+
+```{r}
+# Prepare air logger data for regression
+
+air <- daily_air_master %>% 
+  filter(logger_id == "21679162") %>% 
+  mutate(longdate = make_date(year,month,day)) %>% 
+  filter(longdate > '2024-06-19' & longdate <= '2024-09-15') %>% 
+  mutate(air_mean = mean_temp)
+
+# Prepare individual water logger data for regression
+
+water <- daily_water_master %>% 
+  filter(logger_id == '21433141') %>% 
+  mutate(longdate = make_date(year,month,day)) %>%
+  filter(longdate > '2024-06-19' & longdate <= '2024-09-15') %>% 
+  mutate(water_mean = mean_temp) 
+
+# Join table for linear regression
 airwater_join <- water %>% 
   left_join(air, by = "longdate")
 ```
@@ -149,30 +238,29 @@ airwater_join <- water %>%
 lm_eqn <- function(df){
     m <- lm(water_max ~ air_max, df);
     eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
-         list(a = format(unname(coef(m)[1]), digits = 2),
-              b = format(unname(coef(m)[2]), digits = 2),
-             r2 = format(summary(m)$r.squared, digits = 3)))
+         list(a = format(unname(coef(m)[1]), digits = 3),
+              b = format(unname(coef(m)[2]), digits = 3),
+             r2 = format(summary(m)$adj.r.squared, digits = 3)))
     as.character(as.expression(eq));
 }                 
 
-a <- ggplot(airwater_join, aes(x=air_max, y = water_max)) +
+
+# Calculate Pearson correlation coefficient
+correlation <- cor(airwater_join$water_mean, airwater_join$air_mean, method = 'pearson')
+
+# Plot linear regression
+
+a <- ggplot(airwater_join, aes(x=air_mean, y = water_mean)) +
   geom_point(color='blue') +
   geom_smooth(method = "lm", se = TRUE, colour = 'black') +
   theme_light() + 
- labs(title="Delger Camp 8 Air & Water Correlation",
-       subtitle = "6/15/2023 – 9/15/2023",
+ labs(title="N.Umpqua Air & Water Correlation",
+       subtitle = "6/20/2024 – 9/15/2024",
        x="Air temperature (°C)",
        y="Water temperature (°C)") +
-  geom_text(x = 23, y = 19, label = lm_eqn(airwater_join), parse = TRUE) +
-  geom_text(x = 23, y = 18.5, label = "Pearson r = 0.86")
+  geom_text(x = 15, y = 16, label = lm_eqn(airwater_join), parse = TRUE) +
+  geom_text(x = 15, y = 15, label = "Pearson r = 0.86")
 
 a
-
-# Pearsons correlation coefficient
-correlation <- cor(airwater_join$water_mean, airwater_join$air_mean, method = 'pearson')
-```
-
-```{r}
-daily_water_master <- daily_water_master %>% mutate(long = replace(long, logger_id == "21433141", "43.34425784"))
 ```
 
