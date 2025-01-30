@@ -93,7 +93,7 @@ daily_water_master <- merge(daily_water_master, logger_site, by="logger_id")
 ```
 
 
-```{r}
+```{r USGS Station Stats}
 temp <- read_xlsx("USGS Sites/USGS Site 14317450 (Idleyld Park).xlsx") %>% 
  clean_names() %>% 
  mutate(type = "Water") %>% 
@@ -111,10 +111,68 @@ temp <- merge(temp, logger_site, by="logger_id")
 daily_water_master <- rbind(temp, daily_water_master)
 ```
 
-```{r}
+```{r MDMS & Days Above 20C}
+
 MDMS <- daily_water_master %>% 
   filter(longdate > "2024-06-19" & longdate <= "2024-09-15") %>% 
   group_by(logger_id, site) %>% 
   summarize(mdms = max(max_temp))
+
+DaysAbove20 <- daily_water_master %>% 
+  filter(longdate > "2024-06-19" & longdate <= "2024-09-15") %>% 
+  filter(max_temp > 20) %>% 
+  group_by(logger_id,site) %>% 
+  summarize(daysabove20 = n())
+  
+```
+
+
+```{r}
+
+air <- daily_air_master %>% 
+  filter(logger_id == "21679162") %>% 
+  mutate(longdate = make_date(year,month,day)) %>% 
+  filter(longdate > '2024-06-19' & longdate <= '2024-09-15') %>% 
+  mutate(air_max = max_temp)
+
+water <- daily_water_master %>% 
+  filter(logger_id == '21433141') %>% 
+  mutate(longdate = make_date(year,month,day)) %>%
+  filter(longdate > '2024-06-19' & longdate <= '2024-09-15') %>% 
+  mutate(water_max = max_temp) 
+
+airwater_join <- water %>% 
+  left_join(air, by = "longdate")
+```
+
+```{r}
+lm_eqn <- function(df){
+    m <- lm(water_max ~ air_max, df);
+    eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
+         list(a = format(unname(coef(m)[1]), digits = 2),
+              b = format(unname(coef(m)[2]), digits = 2),
+             r2 = format(summary(m)$r.squared, digits = 3)))
+    as.character(as.expression(eq));
+}                 
+
+a <- ggplot(airwater_join, aes(x=air_max, y = water_max)) +
+  geom_point(color='blue') +
+  geom_smooth(method = "lm", se = TRUE, colour = 'black') +
+  theme_light() + 
+ labs(title="Delger Camp 8 Air & Water Correlation",
+       subtitle = "6/15/2023 – 9/15/2023",
+       x="Air temperature (°C)",
+       y="Water temperature (°C)") +
+  geom_text(x = 23, y = 19, label = lm_eqn(airwater_join), parse = TRUE) +
+  geom_text(x = 23, y = 18.5, label = "Pearson r = 0.86")
+
+a
+
+# Pearsons correlation coefficient
+correlation <- cor(airwater_join$water_mean, airwater_join$air_mean, method = 'pearson')
+```
+
+```{r}
+daily_water_master <- daily_water_master %>% mutate(long = replace(long, logger_id == "21433141", "43.34425784"))
 ```
 
