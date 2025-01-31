@@ -33,7 +33,9 @@ library(writexl)
 # Read in logger metadata
 
 log_metadata <- read_xlsx("NUmpTemperature2024.xlsx") %>% 
- clean_names()
+ clean_names() %>% 
+ mutate(elev_dif_ft = elev_ft - 1120,
+        elev_dif_km = elev_dif_ft/3281)  ## Can be used to adjust air temp for elevation using dry adiabatic lapse rate [temp_new = -9.8(elev_dif_km)]
 
 # Create data frame for logger lat/long
 
@@ -163,7 +165,7 @@ air <- daily_air_master %>%
   filter(logger_id == "21679162") %>% 
   mutate(longdate = make_date(year,month,day)) %>% 
   filter(longdate > '2024-06-19' & longdate <= '2024-09-15') %>% 
-  mutate(air_max = max_temp)
+  mutate(air_max = max_temp)  
 
 # Prepare individual water logger data for regression
 
@@ -193,10 +195,10 @@ lm_eqn <- function(df){
 
 
 # Calculate Pearson correlation coefficient
-correlation <- cor(airwater_join$water_max, airwater_join$air_max, method = 'pearson')
+correlation <- cor(water$max_temp, air$max_temp, method = 'pearson')
 correlation
 
-fit <- lm(water_max ~ air_max, data=airwater_join)
+fit <- lm(water$max_temp ~ air$max_temp)
 summary(fit)
 ```
 
@@ -233,7 +235,8 @@ air <- daily_air_master %>%
   filter(logger_id == "21679162") %>% 
   mutate(longdate = make_date(year,month,day)) %>% 
   filter(longdate > '2024-06-19' & longdate <= '2024-09-15') %>% 
-  mutate(air_mean = mean_temp)
+  mutate(air_mean = mean_temp) 
+  
 
 # Prepare individual water logger data for regression
 
@@ -258,12 +261,11 @@ lm_eqn <- function(df){
     as.character(as.expression(eq));
 }                 
 
-
 # Calculate Pearson correlation coefficient
-correlation <- cor(airwater_join$water_mean, airwater_join$air_mean, method = 'pearson')
+correlation <- cor(water$mean_temp, air$mean_temp, method = 'pearson')
 correlation
 
-fit <- lm(water_mean ~ air_mean, data=airwater_join)
+fit <- lm(water$mean_temp ~ air$mean_temp)
 summary(fit)
 
 ```
