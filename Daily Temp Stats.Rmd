@@ -170,7 +170,7 @@ air <- daily_air_master %>%
 # Prepare individual water logger data for regression
 
 water <- daily_water_master %>% 
-  filter(logger_id == 'USGS_14317450') %>% 
+  filter(logger_id == 'USGS_14316700') %>% 
   mutate(longdate = make_date(year,month,day)) %>%
   filter(longdate > '2024-06-19' & longdate <= '2024-09-15') %>% 
   mutate(water_max = max_temp) 
