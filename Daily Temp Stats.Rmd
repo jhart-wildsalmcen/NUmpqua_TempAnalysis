@@ -292,3 +292,35 @@ b
 ggsave("2024 Logger Sites/Water/Regression Plots/Mean Daily/USGS Gauge (Idleyld Park).png", width = 10, height = 7)
 ```
 
+
+
+## Daily Plots
+
+
+```{r}
+# Read in water master table
+
+water_master <- read_xlsx("2024 Logger Sites/Water/daily_water_master.xlsx") %>% 
+ clean_names() 
+ 
+```
+
+```{r}
+temp <- water_master %>% 
+  filter(logger_id == "21433141" & longdate > '2024-06-19') 
+  
+
+plot_21433131 <- ggplot() +
+  geom_line(data=temp, aes(x=as.Date(longdate),y=mean_temp), linewidth =1,color='black') +
+  geom_line(data=temp, aes(x=as.Date(longdate),y=min_temp), linewidth =0.3, color='blue') +
+  geom_line(data=temp, aes(x=as.Date(longdate), y=max_temp), linewidth =0.3, color = 'red') +
+  
+  scale_x_date(date_breaks = "1 month", date_labels = "%b")+
+  theme_bw()+
+  labs(title= "N. Umpqua Above Steamboat Cr.", y="Temperature (°C)", x="Date")
+
+plot_21433131
+
+# Change file name 
+ggsave(file="2024 Logger Sites/Daily Plots/plot_2143313122.png", height = 7, width = 15)
+```
