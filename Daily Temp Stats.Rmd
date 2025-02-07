@@ -379,4 +379,37 @@ combined_air_plot
 
 ggsave(file="2024 Logger Sites/Air/Daily Plots/air_combined.png", height = 6, width = 10)
 ```
+## RMSE to Distance 
+
+```{r}
+distance <- read_xlsx('DistanceFromAir.xlsx') %>% 
+  clean_names()
+
+fit <- lm(r2_adjusted ~ distance_air_km, data = distance)
+summary(fit)
+
+lm_eqn <- function(df){
+    m <- lm(r2_adjusted ~ distance_air_km, distance);
+    eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
+         list(a = format(unname(coef(m)[1]), digits = 3),
+              b = format(unname(coef(m)[2]), digits = 3),
+             r2 = format(summary(m)$adj.r.squared, digits = 3)))
+    as.character(as.expression(eq));
+}                 
+
+
+a <- ggplot(distance, aes(x=distance_air_km, y = r2_adjusted)) +
+  geom_point(color='black') +
+  geom_smooth(method = "lm", se = TRUE, colour = 'black') +
+  theme_light() + 
+ labs(title="USGS Gauge (Idleyld Park)",
+       subtitle = "6/20/2024 – 9/15/2024",
+       x="Daily Max Air temperature (°C)",
+       y="Daily Max Water temperature (°C)") #+ 
+#geom_text(x = 20, y = 16, label = lm_eqn(airwater_join), parse = TRUE)  + 
+#geom_text(x = 20, y = 15, label = paste("Pearson R:", round(correlation,3)))
+
+a
+
+```
 
