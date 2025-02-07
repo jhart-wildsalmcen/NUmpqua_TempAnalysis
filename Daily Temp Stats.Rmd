@@ -92,7 +92,7 @@ daily_water_master <- rbind(daily_water_master, daily_temp_stats)
 
 # Process USGS Gauge site tables individually & merge to master
 
-temp <- read_xlsx("USGS Sites/USGS Site 14317450 (Idleyld Park).xlsx") %>% 
+temp <- read_xlsx("USGS Sites/USGS Site 14316500 (Tokatee Falls).xlsx") %>% 
  clean_names() %>% 
  mutate(type = "Water") %>% 
 rename("longdate" = "datetime",
@@ -106,7 +106,7 @@ separate('longdate',
 
 temp <- merge(temp, logger_site, by="logger_id")
 
-daily_water_master <- rbind(temp, daily_water_master)
+daily_water_master <- rbind(temp, water_master)
 ```
 
 
@@ -312,28 +312,37 @@ air_master <- read_xlsx("2024 Logger Sites/Air/daily_air_master.xlsx") %>%
 
 ```{r}
 temp <- water_master %>% 
-  filter(logger_id == "USGS Site 14316500 (Tokatee Falls)" & longdate > '2024-06-19' & longdate <= '2024-09-15') 
+  filter(logger_id == "21433141" & longdate > '2024-06-19' & longdate <= '2024-09-15') 
   
 
-plot_21679182 <- ggplot() +
-  geom_line(data=temp, aes(x=as.Date(longdate),y=mean_temp), linewidth =1,color='black') +
-  geom_line(data=temp, aes(x=as.Date(longdate),y=min_temp), linewidth =0.3, color='blue') +
-  geom_line(data=temp, aes(x=as.Date(longdate), y=max_temp), linewidth =0.3, color = 'red') +
-  
+plot_21433141<- ggplot() +
+  geom_line(data=temp, aes(x=as.Date(longdate),y=mean_temp, color="mean_temp"), linewidth =1) +
+  geom_line(data=temp, aes(x=as.Date(longdate),y=min_temp, color = "min_temp"), linewidth =0.3) +
+  geom_line(data=temp, aes(x=as.Date(longdate), y=max_temp, color= "max_temp"), linewidth =0.3) +
+  scale_colour_manual("", 
+                      breaks = c("mean_temp", "min_temp", "max_temp"),
+                      values = c("black", "blue", "red"),
+                      labels = c("Mean Temp.", "Min Temp.", "Max Temp.")) +
   scale_x_date(date_breaks = "1 month", date_labels = "%b")+
-  scale_y_continuous(breaks = seq(8,24,by=2)) +
+  scale_y_continuous(breaks = seq(8,20,by=2)) +
   theme_bw()+
-  labs(title= "Upper Copeland Cr.", subtitle = temp$coordinates, y="Temperature (°C)", x="Date")
+  theme(legend.position = "none") +
+  labs(title= "N. Umpqua Above Steamboat Cr.", subtitle = temp$coordinates, y="Temperature (°C)", x="Date") 
+  #theme(plot.subtitle = element_text(size = 10))
 
-plot_21679182
+plot_21433141
 
 # Change file name 
-ggsave(file="2024 Logger Sites/Water/Daily Plots/plot_21679182.png", height = 6, width = 10)
+ggsave(file="2024 Logger Sites/Water/Daily Plots/plot_USGS_14317450.png", height = 6, width = 10)
 ```
 
 
 ```{r}
-daily_combined_plot <- plot_21433141 + plot_21433145 + plot_21679163 + plot_21679164 + plot_21679171 + plot_21679175 + plot_21679176 + plot_21679177 + plot_21679180 + plot_21679182
+daily_combined_plot <- plot_21679182 + plot_21679163 + plot_21679171 + plot_21679180 +
+plot_21679175 + plot_USGS_14316500 + plot_21679177 + plot_21679176 +
+plot_21679164 + plot_USGS_14316700 + plot_21433141 + plot_21433145 +
+plot_USGS_14317450
+
 daily_combined_plot
 
 ggsave(file="2024 Logger Sites/Water/Daily Plots/daily_combined.png", height = 8, width = 14)
