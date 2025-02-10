@@ -315,34 +315,8 @@ temp <- water_master %>%
   filter(logger_id == "21433141" & longdate > '2024-06-19' & longdate <= '2024-09-15') 
 
 
-plot_21433141<- ggplot() +
+plot_21433141 <- ggplot() +
   geom_line(data=temp, aes(x=as.Date(longdate),y=mean_temp, color="mean_temp"), linewidth =.75) +
-  geom_line(data=temp, aes(x=as.Date(longdate),y=min_temp, color = "min_temp"), linewidth =0.3) +
-  geom_line(data=temp, aes(x=as.Date(longdate), y=max_temp, color= "max_temp"), linewidth =0.3) +
-  scale_colour_manual("", 
-                      breaks = c("mean_temp", "min_temp", "max_temp"),
-                      values = c("black", "blue", "red"),
-                      labels = c("Mean Temp.", "Min Temp.", "Max Temp.")) +
-  scale_x_date(date_breaks = "1 month", date_labels = "%b")+
-  scale_y_continuous(limits = c(9,27), breaks = seq(10,26,by=4)) +
-  theme_bw()+
-  theme(legend.position = "none") +
-  labs(title= "N. Umpqua Above Steamboat Cr.", subtitle = temp$coordinates, y="Temperature (°C)", x="Date") 
-  #theme(plot.subtitle = element_text(size = 10))
-
-plot_21433141
-
-# Change file name 
-ggsave(file="2024 Logger Sites/Water/Daily Plots/plot_21433145.png", height = 6, width = 10)
-```
-
-```{r}
-temp <- water_master %>% 
-  filter(logger_id == "21433145" & longdate > '2024-06-19' & longdate <= '2024-09-15') 
-
-
-plot_21433145<- ggplot() +
-  geom_line(data=temp, aes(x=as.Date(longdate),y=mean_temp, color="mean_temp"), linewidth =1) +
   geom_line(data=temp, aes(x=as.Date(longdate),y=min_temp, color = "min_temp"), linewidth =0.3) +
   geom_line(data=temp, aes(x=as.Date(longdate), y=max_temp, color= "max_temp"), linewidth =0.3) +
   scale_colour_manual("", 
@@ -353,13 +327,14 @@ plot_21433145<- ggplot() +
   scale_y_continuous(breaks = seq(12,20,by=2)) +
   theme_bw()+
   theme(legend.position = "none") +
-  labs(title= "N. Umpqua below Steamboat Cr.", subtitle = temp$coordinates, y="Temperature (°C)", x="Date") 
-  #theme(plot.subtitle = element_text(size = 10))
+  labs(title= "N. Umpqua above Steamboat Cr.", subtitle = temp$coordinates, y="Temperature (°C)", x="Date") 
+ # theme(plot.subtitle = element_text(size = 10))
 
-plot_21433145
+plot_21433141
+
+# Change file name 
+ggsave(file="2024 Logger Sites/Water/Daily Plots/plot_21433141.png", height = 6, width = 10)
 ```
-
-
 
 
 ```{r}
@@ -372,6 +347,22 @@ daily_combined_plot
 
 ggsave(file="2024 Logger Sites/Water/Daily Plots/daily_combined.png", height = 8, width = 14)
 ```
+
+
+```{r}
+# Standardized y-axis
+
+daily_combined_plot_2 <- plot_21679182_2 + plot_21679163_2 + plot_21679171_2 + plot_21679180_2 +
+plot_21679175_2 + plot_USGS_14316500_2 + plot_21679177_2 + plot_21679176_2 +
+plot_21679164_2 + plot_USGS_14316700_2 + plot_21433141_2 + plot_21433145_2 +
+plot_USGS_14317450_2
+
+daily_combined_plot_2
+
+ggsave(file="2024 Logger Sites/Water/Daily Plots/daily_combined_ystandardized.png", height = 8, width = 14)
+```
+
+
 
 ```{r}
 temp <- air_master %>% 
