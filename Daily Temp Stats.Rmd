@@ -313,10 +313,10 @@ air_master <- read_xlsx("2024 Logger Sites/Air/daily_air_master.xlsx") %>%
 ```{r}
 temp <- water_master %>% 
   filter(logger_id == "21433141" & longdate > '2024-06-19' & longdate <= '2024-09-15') 
-  
+
 
 plot_21433141<- ggplot() +
-  geom_line(data=temp, aes(x=as.Date(longdate),y=mean_temp, color="mean_temp"), linewidth =1) +
+  geom_line(data=temp, aes(x=as.Date(longdate),y=mean_temp, color="mean_temp"), linewidth =.75) +
   geom_line(data=temp, aes(x=as.Date(longdate),y=min_temp, color = "min_temp"), linewidth =0.3) +
   geom_line(data=temp, aes(x=as.Date(longdate), y=max_temp, color= "max_temp"), linewidth =0.3) +
   scale_colour_manual("", 
@@ -324,7 +324,7 @@ plot_21433141<- ggplot() +
                       values = c("black", "blue", "red"),
                       labels = c("Mean Temp.", "Min Temp.", "Max Temp.")) +
   scale_x_date(date_breaks = "1 month", date_labels = "%b")+
-  scale_y_continuous(breaks = seq(8,20,by=2)) +
+  scale_y_continuous(limits = c(9,27), breaks = seq(10,26,by=4)) +
   theme_bw()+
   theme(legend.position = "none") +
   labs(title= "N. Umpqua Above Steamboat Cr.", subtitle = temp$coordinates, y="Temperature (°C)", x="Date") 
@@ -333,8 +333,33 @@ plot_21433141<- ggplot() +
 plot_21433141
 
 # Change file name 
-ggsave(file="2024 Logger Sites/Water/Daily Plots/plot_USGS_14317450.png", height = 6, width = 10)
+ggsave(file="2024 Logger Sites/Water/Daily Plots/plot_21433145.png", height = 6, width = 10)
 ```
+
+```{r}
+temp <- water_master %>% 
+  filter(logger_id == "21433145" & longdate > '2024-06-19' & longdate <= '2024-09-15') 
+
+
+plot_21433145<- ggplot() +
+  geom_line(data=temp, aes(x=as.Date(longdate),y=mean_temp, color="mean_temp"), linewidth =1) +
+  geom_line(data=temp, aes(x=as.Date(longdate),y=min_temp, color = "min_temp"), linewidth =0.3) +
+  geom_line(data=temp, aes(x=as.Date(longdate), y=max_temp, color= "max_temp"), linewidth =0.3) +
+  scale_colour_manual("", 
+                      breaks = c("mean_temp", "min_temp", "max_temp"),
+                      values = c("black", "blue", "red"),
+                      labels = c("Mean Temp.", "Min Temp.", "Max Temp.")) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b")+
+  scale_y_continuous(breaks = seq(12,20,by=2)) +
+  theme_bw()+
+  theme(legend.position = "none") +
+  labs(title= "N. Umpqua below Steamboat Cr.", subtitle = temp$coordinates, y="Temperature (°C)", x="Date") 
+  #theme(plot.subtitle = element_text(size = 10))
+
+plot_21433145
+```
+
+
 
 
 ```{r}
@@ -385,11 +410,11 @@ ggsave(file="2024 Logger Sites/Air/Daily Plots/air_combined.png", height = 6, wi
 distance <- read_xlsx('DistanceFromAir.xlsx') %>% 
   clean_names()
 
-fit <- lm(r2_adjusted ~ distance_air_km, data = distance)
+fit <- lm(rse ~ distance_air_km, data = distance)
 summary(fit)
 
 lm_eqn <- function(df){
-    m <- lm(r2_adjusted ~ distance_air_km, distance);
+    m <- lm(rse ~ distance_air_km, distance);
     eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
          list(a = format(unname(coef(m)[1]), digits = 3),
               b = format(unname(coef(m)[2]), digits = 3),
