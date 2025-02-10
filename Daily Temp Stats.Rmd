@@ -312,11 +312,11 @@ air_master <- read_xlsx("2024 Logger Sites/Air/daily_air_master.xlsx") %>%
 
 ```{r}
 temp <- water_master %>% 
-  filter(logger_id == "21433141" & longdate > '2024-06-19' & longdate <= '2024-09-15') 
+  filter(logger_id == "USGS_14317450" & longdate > '2024-06-19' & longdate <= '2024-09-15') 
 
 
-plot_21433141 <- ggplot() +
-  geom_line(data=temp, aes(x=as.Date(longdate),y=mean_temp, color="mean_temp"), linewidth =.75) +
+plot_USGS_14317450 <- ggplot() +
+  geom_line(data=temp, aes(x=as.Date(longdate),y=mean_temp, color="mean_temp"), linewidth =1) +
   geom_line(data=temp, aes(x=as.Date(longdate),y=min_temp, color = "min_temp"), linewidth =0.3) +
   geom_line(data=temp, aes(x=as.Date(longdate), y=max_temp, color= "max_temp"), linewidth =0.3) +
   scale_colour_manual("", 
@@ -324,16 +324,16 @@ plot_21433141 <- ggplot() +
                       values = c("black", "blue", "red"),
                       labels = c("Mean Temp.", "Min Temp.", "Max Temp.")) +
   scale_x_date(date_breaks = "1 month", date_labels = "%b")+
-  scale_y_continuous(breaks = seq(12,20,by=2)) +
+  scale_y_continuous(breaks = seq(14,22,by=2)) +
   theme_bw()+
   theme(legend.position = "none") +
-  labs(title= "N. Umpqua above Steamboat Cr.", subtitle = temp$coordinates, y="Temperature (°C)", x="Date") 
- # theme(plot.subtitle = element_text(size = 10))
+  labs(title= "USGS Gage Station 14317450", subtitle = paste(temp$coordinates, "(Idleyld Park)"), y="Temperature (°C)", x="Date") 
+  theme(plot.subtitle = element_text(size = 10))
 
-plot_21433141
+plot_USGS_14317450
 
 # Change file name 
-ggsave(file="2024 Logger Sites/Water/Daily Plots/plot_21433141.png", height = 6, width = 10)
+ggsave(file="2024 Logger Sites/Water/Daily Plots/plot_USGS_14317450.png", height = 6, width = 10)
 ```
 
 
@@ -427,5 +427,56 @@ a <- ggplot(distance, aes(x=distance_air_km, y = r2_adjusted)) +
 
 a
 
+```
+
+## Max temp air/water correlations (Copeland air station)
+
+```{r}
+# Prepare air logger data for regression
+
+air <- air_master %>% 
+  filter(logger_id == "21433138") %>% 
+  mutate(longdate = make_date(year,month,day)) %>% 
+  filter(longdate > '2024-06-19' & longdate <= '2024-09-15') %>% 
+  mutate(air_mean = mean_temp) 
+  
+
+# Prepare individual water logger data for regression
+
+water <- water_master %>% 
+  filter(logger_id == '21679182') %>% 
+  mutate(longdate = make_date(year,month,day)) %>%
+  filter(longdate > '2024-06-19' & longdate <= '2024-09-15') %>% 
+  mutate(water_mean = mean_temp) 
+
+# Join table for linear regression
+airwater_join <- water %>% 
+  left_join(air, by = "longdate")
+```
+
+
+```{r}
+# Calculate Pearson correlation coefficient
+correlation <- cor(water$mean_temp, air$mean_temp, method = 'pearson')
+correlation
+
+fit <- lm(water$mean_temp ~ air$mean_temp)
+summary(fit)
+
+b <- ggplot(airwater_join, aes(x=air_mean, y = water_mean)) +
+  geom_point(color='blue') +
+  geom_smooth(method = "lm", se = TRUE, colour = 'black') +
+  theme_light() + 
+ labs(title="Upper Copeland Cr.",
+       subtitle = "6/20/2024 – 9/15/2024",
+       x="Daily Mean Air temperature (°C)",
+       y="Daily Mean Water temperature (°C)") #+
+#  geom_text(x = 20, y = 16, label = lm_eqn(airwater_join), parse = TRUE) 
+#  geom_text(x = 20, y = 15, label = paste("Pearson R:", round(correlation,3)))
+
+b
+
+# Export regression plot
+ggsave("2024 Logger Sites/Water/Regression Plots/Mean Daily/Copeland Cr. Upper_Copeland.png", width = 10, height = 7)
 ```
 
